@@ -1,0 +1,45 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+  MyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: RISightseeingApi
+      StageName: Prod
+      Cors:
+        AllowOrigin: "'*'"
+        AllowMethods: "'OPTIONS,GET'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+
+  RISightseeingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: RISightseeingFunction
+      Handler: dist/handler.getSights
+      Runtime: nodejs18.x
+      CodeUri: .
+      MemorySize: 128
+      Timeout: 10
+      Events:
+        GetSightsAPI:
+          Type: Api
+          Properties:
+            Path: /sights
+            Method: get
+            RestApiId: !Ref MyApi
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref RISightseeingSightsTable
+
+  RISightseeingSightsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: RISightseeingSights
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
